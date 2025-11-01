@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mini CRM Mobile — Clients & Resources</title>
+<meta name="theme-color" content="#0d1117">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icons/icon-192.png" sizes="192x192">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+<style>
+:root{--bg:#0d1117;--panel:#111827;--soft:#0f1623;--border:#1f2a37;--text:#e6edf3;--dim:#8b98a5;--accent:#19c37d;--warn:#ffb454;--bad:#ef5350;--ok:#2ecc71;--radius:14px}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif}
+.container{max-width:880px;margin:0 auto;padding:12px}
+.header{position:sticky;top:0;z-index:10;background:linear-gradient(180deg,var(--bg) 75%,rgba(13,17,23,0));padding:8px 12px}
+.tabs{display:flex;gap:8px;margin-bottom:8px}
+.tab{flex:0 0 auto;padding:8px 12px;border-radius:12px;border:1px solid var(--border);background:var(--soft);color:var(--text);cursor:pointer;font-size:14px}
+.tab.active{border-color:rgba(25,195,125,.5);box-shadow:0 0 0 2px rgba(25,195,125,.2) inset}
+.search{display:flex;align-items:center;gap:8px;background:var(--soft);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px}
+.search input{flex:1;background:transparent;border:0;outline:none;color:var(--text);font-size:17px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid #2b3b52;background:#162032;color:#d6deea;font-size:13px;cursor:pointer}.btn.sm{padding:6px 8px;font-size:12px}
+.btn.ghost{background:transparent}
+.list{display:grid;gap:6px;margin-top:10px}
+.card{display:flex;justify-content:space-between;align-items:center;padding:8px 10px;border:1px solid var(--border);border-radius:10px;background:var(--panel)}
+.card .name{font-weight:600;color:#aee0c6;font-size:14px;line-height:1.2}
+.card .meta{font-size:11px;color:var(--dim)}
+.badge{font-size:11px;border-radius:8px;padding:1px 6px;border:1px solid var(--border);opacity:.95}
+.badge.warn{background:rgba(239,83,80,.08);border-color:rgba(239,83,80,.35);color:#ffb0a8}
+.badge.ok{background:rgba(46,204,113,.08);border-color:rgba(46,204,113,.35);color:#b6f1c9}
+.empty{color:var(--dim);padding:24px;text-align:center}
+.small{font-size:12px;color:var(--dim)}
+.install-tip{position:fixed;left:50%;bottom:12px;transform:translateX(-50%);background:#1b2433;border:1px solid #2b3b52;border-radius:10px;color:#d6deea;padding:8px 12px;font-size:13px;display:none;z-index:50}
+/* modal */
+.sheet{position:fixed;inset:0;display:none}
+.sheet.show{display:block}
+.sheet .backdrop{position:absolute;inset:0;background:rgba(5,8,12,.55);backdrop-filter:blur(6px)}
+.sheet .panel{position:absolute;left:0;right:0;bottom:0;background:var(--panel);border-top-left-radius:16px;border-top-right-radius:16px;border:1px solid var(--border);padding:14px 12px 18px;max-height:90vh;overflow:auto}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.row .full{grid-column:1 / -1}
+.input{display:flex;flex-direction:column;gap:6px}
+.input label{font-size:12px;color:var(--dim)}
+.input input,.input textarea{background:var(--soft);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:10px 12px;outline:none}
+.kpis{display:flex;gap:8px;margin:6px 0 8px}
+.pill{padding:6px 10px;border-radius:10px;border:1px solid var(--border);font-size:12px}
+.pill.bad{background:rgba(239,83,80,.08);color:#ffb0a8;border-color:rgba(239,83,80,.35)}
+.pill.ok{background:rgba(46,204,113,.08);color:#b6f1c9;border-color:rgba(46,204,113,.35)}
+.actions{display:flex;gap:10px;margin-top:10px}
+.actions .btn{flex:1;justify-content:center}
+.link{display:block;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--panel);color:var(--text);text-decoration:none;transition:box-shadow .15s ease,border-color .15s ease}
+.link:hover{border-color:rgba(25,195,125,.35);box-shadow:0 0 0 2px rgba(25,195,125,.18) inset}
+</style>
+</head>
+<body>
+  <header class="header container">
+    <div class="tabs">
+      <button id="tab-clients" class="tab active" type="button">Клиенты</button>
+      <button id="tab-res" class="tab" type="button">Ресурсы</button>
+      <button id="btn-demo" class="btn ghost" type="button" title="Добавить демо">＋ Демо</button>
+    </div>
+    <div class="search" role="search">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 21l-3.5-3.5" stroke="#8b98a5" stroke-width="1.8" stroke-linecap="round"></path><circle cx="11" cy="11" r="7" stroke="#8b98a5" stroke-width="1.8"></circle></svg>
+      <input id="q" placeholder="Поиск: имя, телефон, ID" autocomplete="off">
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Clients list -->
+    <section id="view-clients">
+      <div id="clients" class="list"></div>
+      <div id="empty-clients" class="empty">Совпадений нет.</div>
+      <div class="small">Хранилище: <code>localStorage[\"mini_crm_clients_v1\"]</code> · <button id="to-storage" class="btn sm ghost" type="button">Перейти в хранилище</button></div>
+    </section>
+
+    <!-- Resources list -->
+    <section id="view-res" style="display:none">
+      <div id="res-list" class="list"></div>
+      <div id="res-empty" class="empty">Ссылок нет или ничего не найдено</div>
+      <div class="small">Хранилище: <code>localStorage[\"mini_crm_resources_v1\"]</code></div>
+    </section>
+  </main>
+
+  <!-- Client sheet -->
+  <div id="sheet" class="sheet" aria-hidden="true">
+    <div class="backdrop" data-close></div>
+    <div class="panel">
+      <div class="row">
+        <div class="input"><label>Имя</label><input id="f-name"></div>
+        <div class="input"><label>Телефон</label><input id="f-phone" inputmode="tel"></div>
+        <div class="input"><label>Дата</label><input id="f-date" type="date"></div>
+        <div class="input"><label>Детали ₽</label><input id="f-parts" type="number" step="1" min="0"></div>
+        <div class="input"><label>Работы ₽</label><input id="f-labor" type="number" step="1" min="0"></div>
+        <div class="input"><label>Наценка ₽</label><input id="f-markup" type="number" step="1" min="0"></div>
+        <div class="input"><label>Оплачено ₽</label><input id="f-paid" type="number" step="1" min="0"></div>
+        <div class="input full"><label>Заметка мастера</label><textarea id="f-note" rows="3"></textarea></div>
+      </div>
+      <div class="kpis">
+        <div id="pill-total" class="pill">Итог: 0 ₽</div>
+        <div id="pill-debt" class="pill">Долг: 0 ₽</div>
+      </div>
+      <div class="actions">
+        <button id="save" class="btn" type="button">Сохранить</button>
+        <button id="del" class="btn ghost" type="button">Удалить</button>
+        <a id="call" class="btn ghost" href="#">Позвонить</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="install-tip" class="install-tip">Добавьте на экран: меню браузера → «Установить приложение»</div>
+
+<script>(function(){'use strict';
+function $(s,r){return (r||document).querySelector(s)};function $$(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+var CKEY='mini_crm_clients_v1';
+var RKEY='mini_crm_resources_v1';
+var DEBOUNCE_MS=200; var state={rows:[], view:'clients', cur:null};
+function fmt(n){n=+n||0;return n.toLocaleString('ru-RU')} 
+function normPhone(p){return String(p||'').replace(/[^0-9+]/g,'')}
+function nowISO(){return new Date().toISOString()}
+function loadK(k){try{var v=JSON.parse(localStorage.getItem(k)||'[]');return Array.isArray(v)?v:[]}catch(e){return[]}}
+function saveK(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function debtOf(c){var t=(+c.parts||0)+(+c.labor||0)+(+c.markup||0);return t-(+c.paid||0)}
+
+/* RESOURCES helpers (reused) */
+function labelFrom(u){
+  try{
+    if(/^intent:/i.test(u)) return 'Открыть в приложении';
+    if(/^tel:/i.test(u))     return 'Позвонить';
+    if(/^sms:/i.test(u))     return 'SMS';
+    if(/^mailto:/i.test(u))  return u.replace(/^mailto:/i,'');
+    var h=new URL(u).hostname.replace(/^www\./,'');
+    var p=h.split('.');
+    return (p.length>2?p[p.length-2]:p[0])||h;
+  }catch(e){
+    return String(u).replace(/^https?:\/\/(www\.)?/,'').replace(/\/$/,'');
+  }
+}
+
+function render(){
+  var q=($('#q')?$('#q').value:'').toLowerCase();
+  if(state.view==='clients'){
+    var all=loadK(CKEY); state.rows=all.filter(function(c){
+      var phone=(c.phone||'').toLowerCase(), name=(c.name||'').toLowerCase(), id=(c.id||'').toLowerCase();
+      return !q || phone.indexOf(q)>-1 || name.indexOf(q)>-1 || id.indexOf(q)>-1;
+    });
+    var list=$('#clients'); var empty=$('#empty-clients'); if(list) list.innerHTML='';
+    if(!state.rows.length){ if(empty) empty.style.display='block'; return } else if(empty) empty.style.display='none';
+    state.rows.forEach(function(c,i){
+      var d=debtOf(c);
+      var el=document.createElement('div'); el.className='card';
+      el.innerHTML='<div><div class="name">'+(c.name||'Без имени')+'</div>'+
+                   '<div class="meta">'+(c.phone||'')+' • '+(c.date||'—')+'</div></div>'+
+                   '<div><span class="badge '+(d>0?'warn':'ok')+'">'+(d>0?('Долг '+fmt(d)+'₽'):('Оплачено '+fmt(c.paid||0)+'₽'))+'</span></div>';
+      el.addEventListener('click',function(){ openSheet(c); });
+      if(list) list.appendChild(el);
+    });
+  } else {
+    var allr=loadK(RKEY); var rows=allr.filter(function(it){
+      var t=(it.t||'').toLowerCase(), u=(it.u||'').toLowerCase();
+      return !q || t.indexOf(q)>-1 || u.indexOf(q)>-1;});
+    var list2=$('#res-list'); var empty2=$('#res-empty'); if(list2) list2.innerHTML='';
+    if(!rows.length){ if(empty2) empty2.style.display='block'; return } else if(empty2) empty2.style.display='none';
+    rows.forEach(function(it){
+      var href=it.u||''; var a=document.createElement('a'); a.className='link';
+      a.textContent=(it.t&&it.t.trim())?it.t:labelFrom(href); a.href=href;
+      if(/^https?:/i.test(href)){ a.target='_blank'; a.rel='noopener noreferrer'; }
+      else { a.addEventListener('click',function(ev){ev.preventDefault(); try{window.location.href=href}catch(e){}}); }
+      if(list2) list2.appendChild(a);
+    });
+  }
+}
+
+function openSheet(c){ state.cur=c; var sh=$('#sheet'); if(sh) sh.classList.add('show'); fillForm(c); updPills(); }
+function closeSheet(){ var sh=$('#sheet'); if(sh) sh.classList.remove('show'); state.cur=null; }
+function fillForm(c){
+  var n=$('#f-name'), p=$('#f-phone'), d=$('#f-date'), pa=$('#f-parts'), la=$('#f-labor'), m=$('#f-markup'), paid=$('#f-paid'), note=$('#f-note');
+  if(n) n.value=c.name||''; if(p) p.value=c.phone||''; if(d) d.value=c.date||''; if(pa) pa.value=c.parts||0; if(la) la.value=c.labor||0; if(m) m.value=c.markup||0; if(paid) paid.value=c.paid||0; if(note) note.value=c.note||'';
+  var cl=$('#call'); if(cl){ cl.href='tel:'+normPhone(c.phone||''); }
+}
+function readForm(){
+  return {
+    id: state.cur.id,
+    name:($('#f-name')?$('#f-name').value.trim():''),
+    phone:($('#f-phone')?$('#f-phone').value.trim():''),
+    date:($('#f-date')?$('#f-date').value:''),
+    parts:+(($('#f-parts')&&$('#f-parts').value)||0)||0,
+    labor:+(($('#f-labor')&&$('#f-labor').value)||0)||0,
+    markup:+(($('#f-markup')&&$('#f-markup').value)||0)||0,
+    paid:+(($('#f-paid')&&$('#f-paid').value)||0)||0,
+    note:($('#f-note')?$('#f-note').value.trim():''),
+    updated: nowISO()
+  };
+}
+function updPills(){
+  if(!state.cur) return;
+  var c=readForm(); var total=(+c.parts||0)+(+c.labor||0)+(+c.markup||0); var debt=total-(+c.paid||0);
+  var pt=$('#pill-total'); if(pt) pt.textContent='Итог: '+fmt(total)+' ₽';
+  var p=$('#pill-debt'); if(p){ p.textContent='Долг: '+fmt(debt)+' ₽'; p.className='pill '+(debt>0?'bad':'ok'); }
+}
+function saveCur(){
+  if(!state.cur) return;
+  var all=loadK(CKEY); var idx=all.findIndex(function(x){return x.id===state.cur.id}); if(idx>-1){ all[idx]=readForm(); saveK(CKEY,all); }
+  closeSheet(); render();
+}
+function delCur(){
+  if(!state.cur) return;
+  var all=loadK(CKEY).filter(function(x){return x.id!==state.cur.id}); saveK(CKEY,all);
+  closeSheet(); render();
+}
+function debounce(fn,ms){var t;return function(){var a=arguments;clearTimeout(t);t=setTimeout(function(){fn.apply(null,a)},ms)}}
+
+function switchView(v){
+  state.view=v;
+  var tc=$('#tab-clients'), tr=$('#tab-res'), vc=$('#view-clients'), vr=$('#view-res');
+  if(tc) tc.classList.toggle('active',v==='clients');
+  if(tr) tr.classList.toggle('active',v==='res');
+  if(vc) vc.style.display=(v==='clients')?'block':'none';
+  if(vr) vr.style.display=(v==='res')?'block':'none';
+  render();
+}
+
+// SW & install tip
+if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('./service-worker.js').catch(function(e){console.log('SW error',e)}) }); }
+var tip=$('#install-tip'); window.addEventListener('beforeinstallprompt',function(e){e.preventDefault(); if(tip){ tip.style.display='block'; setTimeout(function(){tip.style.display='none'},6000) }});
+
+// Init
+ document.addEventListener('DOMContentLoaded',function(){
+  // demo
+  var bd=$('#btn-demo'); if(bd) bd.addEventListener('click',function(){
+    // Clients demo
+    var demo=[
+      {id:'C-001',name:'Кадуков Андрей',phone:'+7 910 711-60-72',date:'2025-10-31',parts:3000,labor:2000,markup:500,paid:3500,note:'замена дисплея'},
+      {id:'C-002',name:'Сергей Орлов',phone:'+7 904 777-88-55',date:'2025-10-31',parts:1800,labor:1200,markup:300,paid:1800,note:'акб и чистка'},
+      {id:'C-003',name:'Мария Ким',phone:'+7 912 555-66-44',date:'2025-10-31',parts:0,labor:1500,markup:0,paid:1500,note:'диагностика'}
+    ];
+    saveK(CKEY,demo);
+    // Resources demo
+    saveK(RKEY,[
+      {t:'GitHub',u:'https://github.com/'},
+      {t:'Android Docs',u:'https://developer.android.com/'},
+      {t:'MIUI Forum',u:'https://c.mi.com/'},
+      {t:'УграРемКомп',u:'https://shobo.tb.ru/page2'}
+    ]);
+    render();
+  });
+
+  var q=$('#q'); if(q) q.addEventListener('input',debounce(render,DEBOUNCE_MS));
+  var ts=$('#to-storage'); if(ts) ts.addEventListener('click',function(){switchView('res')});
+  var tcli=$('#tab-clients'); if(tcli) tcli.addEventListener('click',function(){switchView('clients')});
+  var tres=$('#tab-res'); if(tres) tres.addEventListener('click',function(){switchView('res')});
+  var bc=$('[data-close]'); if(bc) bc.addEventListener('click',closeSheet);
+  var s=$('#save'); if(s) s.addEventListener('click',saveCur);
+  var d=$('#del'); if(d) d.addEventListener('click',delCur);
+  ['#f-name','#f-phone','#f-date','#f-parts','#f-labor','#f-markup','#f-paid','#f-note'].forEach(function(s){
+    var el=$(s); if(el) el.addEventListener('input',debounce(updPills,150));
+  });
+  // start on clients
+  switchView('clients');
+ });
+})();</script>
+</body>
+</html>
